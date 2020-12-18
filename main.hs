@@ -1,5 +1,6 @@
-import Game
+import Game (startGame)
 import GameMap (Map)
+import Solver (solve, validate)
 import System.Directory (doesFileExist, getCurrentDirectory)
 
 data LoadState = LoadState
@@ -30,13 +31,29 @@ printIntro = do
 mainLoop :: LoadState -> IO ()
 mainLoop (LoadState _ 0) = do return ()
 mainLoop (LoadState m s) = do
-  putStrLn "ok(?): load, quit | testing: play | todo: check, solve"
+  putStrLn "ok(?): load, quit | testing: play, solve, check"
   cmd <- getLine
   case words cmd of
     ["quit"] -> mainLoop (LoadState m 0)
     ["load", path] -> do
       map <- loadMap path
       mainLoop (LoadState map s)
+    ["check"] -> do
+      case m of
+        Nothing -> do mainLoop (LoadState m s)
+        Just map -> do
+          print $ validate map
+          mainLoop (LoadState m s)
+    ["solve"] -> do
+      case m of
+        Nothing -> do mainLoop (LoadState m s)
+        Just map -> do
+          if validate map
+            then do
+              print $ solve map
+            else do
+              putStrLn "Bad Map"
+          mainLoop (LoadState m s)
     ["play"] -> do
       startGame m
     _ -> do
