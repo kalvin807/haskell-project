@@ -1,35 +1,50 @@
-data Game = Game
-  { map :: Maybe [String],
+import Game
+import GameMap (Map)
+import System.Directory (doesFileExist, getCurrentDirectory)
+
+data LoadState = LoadState
+  { map :: Maybe Map,
     status :: Int
   }
 
-loadMap :: String -> IO [String]
-loadMap path = do
-  contents <- readFile path
-  return $ lines contents
-
+loadMap :: String -> IO (Maybe [[String]])
+loadMap fileName = do
+  exedir <- getCurrentDirectory
+  let fullpath = exedir ++ "/" ++ removeQuote fileName
+  putStrLn fullpath
+  isFileExist <- doesFileExist fullpath
+  if isFileExist
+    then do
+      contents <- readFile fullpath
+      return $ Just (Prelude.map words (lines contents))
+    else do
+      putStrLn "The map file does not exist!"
+      return Nothing
+  where
+    removeQuote xs = [x | x <- xs, x `notElem` "\""]
 
 printIntro :: IO ()
 printIntro = do
-  putStrLn "dfgsdhfghdfghdfgh"
+  putStrLn "WELCOME TO HASKELL PROJECT"
 
-mainLoop :: Game -> IO ()
-mainLoop (Game _ 0) = do return ()
-mainLoop (Game m s) = do
-  putStrLn "ok(?): load, quit | todo: play, check, solve"
+mainLoop :: LoadState -> IO ()
+mainLoop (LoadState _ 0) = do return ()
+mainLoop (LoadState m s) = do
+  putStrLn "ok(?): load, quit | testing: play | todo: check, solve"
   cmd <- getLine
   case words cmd of
-    ["quit"] -> mainLoop (Game m 0)
+    ["quit"] -> mainLoop (LoadState m 0)
     ["load", path] -> do
-      putStrLn path
       map <- loadMap path
-      mainLoop (Game (Just map) 0)
+      mainLoop (LoadState map s)
+    ["play"] -> do
+      startGame m
     _ -> do
       putStrLn $ "Invalid option -- '" ++ cmd ++ "'"
       putStrLn "Try 'help' for more information."
-      mainLoop (Game m s)
+      mainLoop (LoadState m s)
 
 main :: IO ()
 main = do
   printIntro
-  mainLoop (Game Nothing 1)
+  mainLoop (LoadState Nothing 1)
