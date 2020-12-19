@@ -4,7 +4,7 @@ import qualified Command as C
 import Data.Maybe (catMaybes)
 import qualified Data.Set as S
 import GameMap
-  ( Coord,
+  (isBonusTile,  Coord,
     Map,
     Tile,
     at,
@@ -65,7 +65,6 @@ probe curPos endPos wayPts seen m (moves, cost)
             probe nextPos endPos wayPts' seen' m' (moves, cost)
   where
     updateIfBonus wp p m sn = if isBonusTile p m then (S.delete p wp, changeTile "-" p m, S.empty) else (wp, m, sn)
-    isBonusTile p m = at p m == "b"
     isSplit cp np m = isColorTile cp m || not (isWalkable np m)
     makeNextProbe dir cP eP wPts sn m (ms, c) = probe (getNextPos dir cP) eP wPts (S.insert cP sn) m (makeMove dir cP m : ms, c + 1)
     makeMove dir pos m = Move dir (at pos m) pos
@@ -84,7 +83,7 @@ movesToActions (Just ms) = ms2as ms
     ms2as (m : ms) = m2a m : ms2as ms
     m2a (Move dir t _) = case tileToColor t of
       Just c -> C.Condition c dir
-      Nothing -> C.Atom dir
+      Nothing -> C.Action dir
 
 -- Unsafe: map must be validated before use
 -- Solve and give path that try to collect all bonus and reach endpoint

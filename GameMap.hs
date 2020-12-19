@@ -10,7 +10,7 @@ type Coord = (Int, Int)
 
 type Bonus = Int
 
-data ColorTile = Pink | Yellow | Green deriving (Show)
+data ColorTile = Pink | Yellow | Green deriving (Show, Eq)
 
 -- Find positions of a tile
 findTileCoords :: Map -> Tile -> [Coord]
@@ -64,6 +64,9 @@ isColorTile c m = case tileToColor (at c m) of
   Nothing -> False
   Just _ -> True
   
+isBonusTile :: Coord -> Map -> Bool
+isBonusTile p m = at p m == "b"
+
 -- Unsafe: Coordinate must be checked before use it
 -- Replace a tile in a map with a new symbol and then return the new map
 changeTile :: Tile -> Coord -> Map -> Map
