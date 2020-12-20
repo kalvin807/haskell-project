@@ -1,31 +1,11 @@
 module Solver where
 
-import qualified Command as C
-import Data.Maybe (catMaybes)
+import Command
+import Data.Maybe
 import qualified Data.Set as S
 import GameMap
-  (isBonusTile,  Coord,
-    Map,
-    Tile,
-    at,
-    changeTile,
-    findBonus,
-    findEnd,
-    findStart,
-    findTileCoords,
-    isColorTile,
-    isWalkable,
-    tileToColor,
-  )
 
-data Move = Move {action :: C.Direction, tile :: Tile, coord :: Coord} deriving (Show)
-
--- Helper function that match directions to their coordinate change
-getNextPos :: C.Direction -> Coord -> Coord
-getNextPos C.Up (r, c) = (r - 1, c)
-getNextPos C.Down (r, c) = (r + 1, c)
-getNextPos C.Left (r, c) = (r, c - 1)
-getNextPos C.Right (r, c) = (r, c + 1)
+data Move = Move {action :: Direction, tile :: Tile, coord :: Coord} deriving (Show)
 
 -- Helper function to get the path with the lowest cost
 getMinCost :: [([Move], Int)] -> Maybe [Move]
@@ -60,7 +40,7 @@ probe curPos endPos wayPts seen m (moves, cost)
      in -- If current position is allow to change direction
         if isSplit curPos nextPos m
           then -- Then generate probes to search the new directions
-            concatMap nextProbe C.allDirection
+            concatMap nextProbe allDirection
           else -- Otherwise continue with the same direction
             probe nextPos endPos wayPts' seen' m' (moves, cost)
   where
@@ -72,22 +52,22 @@ probe curPos endPos wayPts seen m (moves, cost)
 -- TODO: Refactor to gen moves for any case?
 -- Helper function that generate all possible direction at the beginning
 firstMoves :: Map -> Coord -> [([Move], Int)]
-firstMoves m pos = map (\dir -> ([Move dir (at pos m) pos], 1)) (filter (\dir -> isWalkable (getNextPos dir pos) m) C.allDirection)
+firstMoves m pos = map (\dir -> ([Move dir (at pos m) pos], 1)) (filter (\dir -> isWalkable (getNextPos dir pos) m) allDirection)
 
 -- Translate moves to list of action that can further translated to a set of instruction
-movesToActions :: Maybe [Move] -> [C.Action]
+movesToActions :: Maybe [Move] -> [Action]
 movesToActions Nothing = []
 movesToActions (Just ms) = ms2as ms
   where
     ms2as [] = []
     ms2as (m : ms) = m2a m : ms2as ms
     m2a (Move dir t _) = case tileToColor t of
-      Just c -> C.Condition c dir
-      Nothing -> C.Action dir
+      Just c -> Condition c dir
+      Nothing -> Action dir
 
 -- Unsafe: map must be validated before use
 -- Solve and give path that try to collect all bonus and reach endpoint
-solve :: Map -> [C.Action]
+solve :: Map -> [Action]
 solve m = reverse $ movesToActions (getMinCost (catMaybes (concatMap probe' (firstMoves m start))))
   where
     probe' move = probe start end bonusS S.empty m move
@@ -97,7 +77,7 @@ solve m = reverse $ movesToActions (getMinCost (catMaybes (concatMap probe' (fir
 
 -- Unsafe: map must be validated before use
 -- Solve and give path that try to reach endpoint
-validateSolve :: Map -> [C.Action]
+validateSolve :: Map -> [Action]
 validateSolve m = reverse $ movesToActions (getMinCost (catMaybes (concatMap probe' (firstMoves m start))))
   where
     probe' move = probe start end S.empty S.empty m move
@@ -105,13 +85,16 @@ validateSolve m = reverse $ movesToActions (getMinCost (catMaybes (concatMap pro
     end = findEnd m
 
 -- A valid map need to have:
+-- no invalid symbol
 -- 1 ball (@)
 -- 1 target (t)
 -- at least 1 path from ball (@) to target (t)
 -- Check if a map valid
 validate :: Map -> Bool
-validate m = ballCount == 1 && endCount == 1 && paths > 0
+validate m = isTilesValid m && ballCount == 1 && endCount == 1 && paths > 0
   where
     ballCount = length $ findTileCoords m "@"
     endCount = length $ findTileCoords m "t"
     paths = length $ validateSolve m
+    isTilesValid = all (all isValidTile)
+    isValidTile = flip elem ["*", "-", "@", "t", "b", "g", "p", "y"]

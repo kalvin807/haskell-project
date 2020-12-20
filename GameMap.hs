@@ -10,7 +10,12 @@ type Coord = (Int, Int)
 
 type Bonus = Int
 
-data ColorTile = Pink | Yellow | Green deriving (Show, Eq)
+data ColorTile = Pink | Yellow | Green deriving (Eq)
+
+instance Show ColorTile where
+  show Pink = "p"
+  show Yellow = "y"
+  show Green = "g"
 
 -- Find positions of a tile
 findTileCoords :: Map -> Tile -> [Coord]
@@ -63,7 +68,7 @@ isColorTile :: Coord -> Map -> Bool
 isColorTile c m = case tileToColor (at c m) of
   Nothing -> False
   Just _ -> True
-  
+
 isBonusTile :: Coord -> Map -> Bool
 isBonusTile p m = at p m == "b"
 
@@ -74,11 +79,3 @@ changeTile t (r, c) m =
   take r m
     ++ [take c (m !! r) ++ [t] ++ drop (c + 1) (m !! r)]
     ++ drop (r + 1) m
-
-testStr = ["* * * * * - - - - - - - - - - - - - - - - - - - * * * * *", "* * * * * b - - - - - - - - - - - - - - - - - b * * * * *", "* * * * * - * * * * * * * * * * * * * * * * * - * * * * *", "* * * * * - * * - - - - * * * * * - - - - * * - * * * * *", "* * * * * - * * - y y - * * * * * - y y - * * - * * * * *", "* * * * * - * * - - - - * * * * * - - - - * * - * * * * *", "* * * * * - * * * * * * - - b - - * * * * * * - * * * * *", "* * * * * - * * * * * * - * * * - * * * * * * - * * * * *", "@ - - - - - * * * * * * - * * * - * * * * * * p - - - - t", "* * * * * - * * * * * * - * * * - * * * * * * - * * * * *", "* * * * * - - - - - - - - * * * - - - - - - - - * * * * *", "* * * * * * * * * * * * * * * * * * * * * * * * * * * * *", "* * * * * * * * * * * * * * * * * * * * * * * * * * * * *"]
-
-testStr2 = ["* * * * * * * * * * *", "* * @ - - b - - - * *", "* * - * * * * * - * *", "- - y * * * * * y - t", "* * - * * * * * - * *", "* * - - - b - - - * *", "* * * * * * * * * * *"]
-
-testMap = Prelude.map words testStr
-
-testMap2 = Prelude.map words testStr2

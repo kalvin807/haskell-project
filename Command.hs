@@ -5,11 +5,17 @@ import Data.Char
 import GameMap
 import Parser
 
-data Direction = Up | Down | Left | Right deriving (Show)
+data Direction = CUp | CDown | CLeft | CRight
 
 data Action = Action Direction | Condition ColorTile Direction
 
 data Command = Command Action | Loop Int Action Action | Function
+
+instance Show Direction where
+  show CUp = "Up"
+  show CDown = "Down"
+  show CLeft = "Left"
+  show CRight = "Right"
 
 instance Show Action where
   show (Action dir) = show dir
@@ -21,7 +27,7 @@ instance Show Command where
   show Function = "Function"
 
 allDirection :: [Direction]
-allDirection = [Up, Down, Command.Left, Command.Right]
+allDirection = [CUp, CDown, CLeft, CRight]
 
 colorP :: Parser ColorTile
 colorP = choose [pinkP, yellowP, greenP]
@@ -33,10 +39,10 @@ colorP = choose [pinkP, yellowP, greenP]
 dirP :: Parser Direction
 dirP = choose [upP, downP, leftP, rightP]
   where
-    upP = string "up" >> return Up
-    downP = string "down" >> return Down
-    leftP = string "left" >> return Command.Left
-    rightP = string "right" >> return Command.Right
+    upP = string "up" >> return CUp
+    downP = string "down" >> return CDown
+    leftP = string "left" >> return CLeft
+    rightP = string "right" >> return CRight
 
 actDirP :: Parser Action
 actDirP = do Action <$> dirP
@@ -70,16 +76,26 @@ cmdActP = do Command <$> actP
 funcP :: Parser Command
 funcP = string "function" >> return Function
 
-commandP' :: Parser Command
-commandP' = choose [loopP, funcP, cmdActP] <* optional (char ' ')
-
 commandP :: Parser [Command]
 commandP = many commandP' <* eof
+  where
+    commandP' = choose [loopP, funcP, cmdActP] <* optional (char ' ')
 
-strToCmd :: String -> Maybe [Command]
-strToCmd str = case runParser commandP (map toLower str) of
+funcCommandP :: Parser [Command]
+funcCommandP = many funcCommandP' <* eof
+  where
+    funcCommandP' = cmdActP <* optional (char ' ')
+
+strToCmd :: Parser [Command] -> String -> Maybe [Command]
+strToCmd p str = case runParser p (map toLower str) of
   [] -> Nothing
   [(cs, _)] -> Just cs
+
+parseCommand :: String -> Maybe [Command]
+parseCommand = strToCmd commandP
+
+parseFunction :: String -> Maybe [Command]
+parseFunction = strToCmd funcCommandP
 
 expand :: Command -> [Action] -> [Action]
 expand (Command a) _ = [a]
@@ -94,6 +110,9 @@ expandCmd cs fx = expandCmd' cs fx
     expandCmd' [] _ = []
     expandCmd' (c : cs) fx = expand c fx ++ expandCmd' cs fx
 
-test str = case strToCmd str of
-    Nothing -> Nothing 
-    Just cs -> Just (expandCmd cs [])
+-- Helper function that match directions to their coordinate change
+getNextPos :: Direction -> Coord -> Coord
+getNextPos CUp (r, c) = (r - 1, c)
+getNextPos CDown (r, c) = (r + 1, c)
+getNextPos CLeft (r, c) = (r, c - 1)
+getNextPos CRight (r, c) = (r, c + 1)
