@@ -1,4 +1,12 @@
 {-# LANGUAGE GeneralisedNewtypeDeriving #-}
+{- |
+Module      :  Parser.hs
+Description :  Parser fundamental and useful combinators
+
+Parser from assignment 2 which provide basic functionality of a parser. 
+Thank you for providing this excellent foundation stone
+-}
+
 
 module Parser
   ( Parser(..)

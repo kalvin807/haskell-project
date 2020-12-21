@@ -1,3 +1,15 @@
+-- |
+-- Module      :  GameMap.hs
+-- Description :  Model of a map
+-- Copyright   :  Leung Chun Yin
+-- License     :  MIT
+--
+-- Maintainer  :  kalvin80@hku.hk
+-- Stability   :  experimental
+-- Portability :  portable
+--
+-- GameMap provides the model of a game map. It also provides functions to read the points of interest in the map.
+-- and modifying the map.
 module GameMap where
 
 import Data.List (elemIndices)
@@ -79,3 +91,16 @@ changeTile t (r, c) m =
   take r m
     ++ [take c (m !! r) ++ [t] ++ drop (c + 1) (m !! r)]
     ++ drop (r + 1) m
+
+-- A valid map need to have:
+-- no invalid symbol
+-- 1 ball (@)
+-- 1 target (t)
+-- Check if a map valid
+validate :: Map -> Bool
+validate m = isTilesValid m && ballCount == 1 && endCount == 1
+  where
+    ballCount = length $ findTileCoords m "@"
+    endCount = length $ findTileCoords m "t"
+    isTilesValid = all (all isValidTile)
+    isValidTile = flip elem ["*", "-", "@", "t", "b", "g", "p", "y"]

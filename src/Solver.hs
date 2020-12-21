@@ -1,3 +1,15 @@
+-- |
+-- Module      :  Solver.hs
+-- Description :  Agent to solve a given maze
+-- Copyright   :  Leung Chun Yin
+-- License     :  MIT
+--
+-- Maintainer  :  kalvin80@hku.hk
+-- Stability   :  experimental
+-- Portability :  portable
+--
+-- Solver provide a agent to find a optimal path to both reaching the target and collecting all bonus.
+-- However, it yet to provide the most compact command sequence that use Function and Loop.
 module Solver where
 
 import Command
@@ -49,7 +61,6 @@ probe curPos endPos wayPts seen m (moves, cost)
     makeNextProbe dir cP eP wPts sn m (ms, c) = probe (getNextPos dir cP) eP wPts (S.insert cP sn) m (makeMove dir cP m : ms, c + 1)
     makeMove dir pos m = Move dir (at pos m) pos
 
--- TODO: Refactor to gen moves for any case?
 -- Helper function that generate all possible direction at the beginning
 firstMoves :: Map -> Coord -> [([Move], Int)]
 firstMoves m pos = map (\dir -> ([Move dir (at pos m) pos], 1)) (filter (\dir -> isWalkable (getNextPos dir pos) m) allDirection)
@@ -67,13 +78,14 @@ movesToActions (Just ms) = ms2as ms
 
 -- Unsafe: map must be validated before use
 -- Solve and give path that try to collect all bonus and reach endpoint
-solve :: Map -> [Action]
-solve m = reverse $ movesToActions (getMinCost (catMaybes (concatMap probe' (firstMoves m start))))
+solve :: Map -> ([Command], [Command])
+solve m = concatCmd . upgradeToCmd . reverse $ movesToActions (getMinCost (catMaybes (concatMap probe' (firstMoves m start))))
   where
     probe' move = probe start end bonusS S.empty m move
     start = findStart m
     end = findEnd m
     bonusS = S.fromList (findBonus m)
+    upgradeToCmd = map Command
 
 -- Unsafe: map must be validated before use
 -- Solve and give path that try to reach endpoint
@@ -84,17 +96,6 @@ validateSolve m = reverse $ movesToActions (getMinCost (catMaybes (concatMap pro
     start = findStart m
     end = findEnd m
 
--- A valid map need to have:
--- no invalid symbol
--- 1 ball (@)
--- 1 target (t)
 -- at least 1 path from ball (@) to target (t)
--- Check if a map valid
-validate :: Map -> Bool
-validate m = isTilesValid m && ballCount == 1 && endCount == 1 && paths > 0
-  where
-    ballCount = length $ findTileCoords m "@"
-    endCount = length $ findTileCoords m "t"
-    paths = length $ validateSolve m
-    isTilesValid = all (all isValidTile)
-    isValidTile = flip elem ["*", "-", "@", "t", "b", "g", "p", "y"]
+isSolvable :: Map -> Bool
+isSolvable m = not (null (validateSolve m))
